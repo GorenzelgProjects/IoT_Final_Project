@@ -1,0 +1,10 @@
+4.8 mm at short side (bottom 3.8 mm)
+5.5 mm at long side
+1.5 mm height
+
+spacing in between at bottom 63.35 mm
+spacing to border 13.70 mm
+
+overall width 54.75 mm
+overall length 165.50 mm
+overall thickness 9.50 mm
