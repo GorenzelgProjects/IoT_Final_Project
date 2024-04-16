@@ -8,3 +8,8 @@ spacing to border 13.70 mm
 overall width 54.75 mm
 overall length 165.50 mm
 overall thickness 9.50 mm
+
+
+
+
+servo: 23 mm x 13 mm
