@@ -1,5 +1,9 @@
 //LIBARIES
-#include <LiquidCrystal_I2C.h> //LCD
+//#include <LiquidCrystal_I2C.h> //LCD
+#include <Wire.h>
+#include <hd44780.h>                       // main hd44780 header
+#include <hd44780ioClass/hd44780_I2Cexp.h> // i2c expander i/o class header
+
 #include <SPI.h> //RFID
 #include <MFRC522.h> //RFID
 #include <Servo.h> //ServoMotor
@@ -22,32 +26,37 @@ Servo servo;
 // I2C address, width (in characters) and
 // height (in characters). Depending on the
 // Actual device, the IC2 address may change. FOUND on address 0x27
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+// LiquidCrystal_I2C lcd(0x27, 16, 2);
+hd44780_I2Cexp lcd;
+unsigned long lcdTimer = 0;
+
 
 void setup() {
   Serial.begin(9600);
   SPI.begin();
   mfrc522.PCD_Init();
-  servo.attach(0);
+  servo.attach(D3);
   servo.write(0);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  
 
-  Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
+  // Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 
   //Constuct LCD screen (16 = widht, 2 = height *in chars)
   lcd.begin(16,2);
-  lcd.init();
 
   stringToLCD("Hello World", 5000);
 }
 
 void loop() {
+  
   if (access()) {
+    
     rotate(90);  //Access granted, open the door
   }
 
   if (digitalRead(BUTTON_PIN) == LOW) {  //Check if the button is pressed
-    stringToLCD("Add New User", 5000);
+    //stringToLCD("Add New User", 5000);
     delay(500);
   
     addNewChip();  //Add a new RFID chip if pressed
@@ -76,8 +85,10 @@ bool access() {
 }
 
 void rotate(int angle) {
+  
   servo.write(angle);
-  delay(3000);
+  delay(3000); 
+  
   servo.write(0);
 }
 
@@ -109,17 +120,20 @@ bool isUIDInAccessList(byte* uid) {
 }
 
 void stringToLCD(char* theText, int time){ //theText is what text that should be written on the screen and time is for how long it should be there in ms
+  lcdTimer = millis();
+  
   
   lcd.backlight(); // Turn on the backlight.
-
   
   //print text
   lcd.print(theText);
 
+  if (lcdTimer + time < millis()){
+    lcd.noBacklight(); // Turn off the backlight.
+    lcd.clear(); //clears screen
+  }
 
-  delay(time); //time to show text
-  lcd.noBacklight(); // Turn off the backlight.
-  lcd.clear(); //clears screen
+
 
 
 }
