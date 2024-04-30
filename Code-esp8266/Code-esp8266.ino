@@ -14,8 +14,8 @@
 //-----------------------------------------------------//
 //              WIFI / ThingSpeak / Sound
 //-----------------------------------------------------//
-int led = 10;
-int sound_digital = 19; //////MAYBE need to be changed to 9 which is pin SDD2
+int led = 10; //SDD3
+int sound_digital = 9; //////MAYBE need to be changed to 9 which is pin SDD2
 int sound_analog = A0;   
 
 const int ARRAY_LENGTH = 64;
