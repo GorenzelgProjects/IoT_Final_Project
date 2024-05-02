@@ -6,16 +6,23 @@
 #include "ThingSpeak.h"
 #include "secrets.h"
 
+#include <hd44780.h>                     
+#include <hd44780ioClass/hd44780_I2Cexp.h> 
+
 #define RST_PIN D0
 #define SS_PIN D8
 #define BUTTON_PIN D4
-#define LED_PIN D1    // Adjust pin number
-#define SOUND_DIGITAL D2  // Adjust pin number
+#define LED_PIN 10    
+#define SOUND_DIGITAL 9  
+//D1 D2 used for i2cLCD
 
 MFRC522 mfrc522(SS_PIN, RST_PIN); 
 Servo servo;
 
 WiFiClient client;
+
+hd44780_I2Cexp lcd;
+unsigned long lcdTimer = 0;
 
 unsigned long myChannelNumber = SECRET_CH_ID;
 const char* myWriteAPIKey = SECRET_WRITE_APIKEY;
@@ -64,12 +71,15 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   Serial.println("Setup complete.");
+  lcd.begin(16,2);
 
 }
 
 void loop() {
-  //handleWiFi();
+  handleWiFi();
   handleRFIDandSound();
+  clearLCD();
+
 }
 
 void handleWiFi() {
@@ -94,6 +104,7 @@ void handleRFIDandSound() {
 
   
   if (digitalRead(BUTTON_PIN) == LOW) {
+    stringToLCD("Add User", 5000);
     delay(500);
     addNewChip();
   }
@@ -104,6 +115,7 @@ void handleRFIDandSound() {
 
   if (access()) {
     Serial.println("Card Accepted");
+    stringToLCD("Card Accepted", 3000);
     delay(3000);
     audio();
     delay(10000);
@@ -112,6 +124,7 @@ void handleRFIDandSound() {
     Serial.println(clap);
     if (clap == 1){
       Serial.println("Clap Detected");
+      stringToLCD("Open Lid", 3000);
       rotate(90);
     }
     else {
@@ -177,6 +190,7 @@ void rotate(int angle) {
       servo.write(-pos);              // tell servo to go to position in variable 'pos'
       delay(30);}
     Serial.println("Servo should rotat");
+    stringToLCD("Closed Lid", 3000);
 }
 
 void audio() {
@@ -279,4 +293,23 @@ void audio() {
     resultData = "";
     //RFID = 0;
     recordStarted = 0;
+}
+
+
+void stringToLCD(char* theText, int time){ 
+  lcdTimer = millis()+time;
+  
+  lcd.setCursor(0,0);
+  lcd.backlight(); // Turn on the backlight.
+  
+  //print text
+  lcd.print(theText);
+  
+}
+
+void clearLCD(){
+  if (lcdTimer < millis()){
+      lcd.noBacklight(); // Turn off the backlight.
+      lcd.clear(); //clears screen
+  }
 }
