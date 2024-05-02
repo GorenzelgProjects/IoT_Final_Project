@@ -11,7 +11,6 @@
 #define BUTTON_PIN D4
 #define LED_PIN D1    // Adjust pin number
 #define SOUND_DIGITAL D2  // Adjust pin number
-#define SOUND_ANALOG A0
 
 MFRC522 mfrc522(SS_PIN, RST_PIN); 
 Servo servo;
@@ -69,13 +68,13 @@ void setup() {
 }
 
 void loop() {
-  handleWiFi();
+  //handleWiFi();
   handleRFIDandSound();
 }
 
 void handleWiFi() {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.print("Connecting to SSID: ");
+    Serial.println("Connecting to SSID: ");
     Serial.println(ssid);
     WiFi.begin(ssid, pass);
     while (WiFi.status() != WL_CONNECTED) {
@@ -88,8 +87,12 @@ void handleWiFi() {
 
 void handleRFIDandSound() {
   int val_digital = digitalRead(SOUND_DIGITAL);
-  int val_analog = analogRead(SOUND_ANALOG);
+  int button_analog = digitalRead(BUTTON_PIN);
 
+  Serial.println(button_analog);
+
+
+  
   if (digitalRead(BUTTON_PIN) == LOW) {
     delay(500);
     addNewChip();
@@ -104,8 +107,8 @@ void handleRFIDandSound() {
     delay(3000);
     audio();
     delay(10000);
-    //int clap = 1;
-    int clap = ThingSpeak.readIntField(myChannelNumber,2,myReadAPIKey);
+    int clap = 1;
+    //int clap = ThingSpeak.readIntField(myChannelNumber,2,myReadAPIKey);
     Serial.println(clap);
     if (clap == 1){
       Serial.println("Clap Detected");
