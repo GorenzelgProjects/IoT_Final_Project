@@ -114,8 +114,7 @@ void handleRFIDandSound() {
   }
 
   if (access()) {
-    Serial.println("Card Accepted");
-    stringToLCD("Card Accepted", 3000);
+    
     delay(3000);
     audio();
     delay(10000);
@@ -134,6 +133,7 @@ void handleRFIDandSound() {
     // Handle additional logic here
   } else {
     pass;
+    
     //Serial.println("Card Denied");
   }
 }
@@ -143,11 +143,13 @@ bool access() {
     return false;
   }
   if (isUIDInAccessList(mfrc522.uid.uidByte)) {
-    Serial.println("Access Granted");
+    Serial.println("Card Accepted");
+    stringToLCD("Card Accepted", 3000);
     mfrc522.PICC_HaltA();
     return true;
   }
-  Serial.println("Access Denied");
+  Serial.println("Card Denied");
+  stringToLCD("Card Denied", 3000);
   mfrc522.PICC_HaltA();
   return false;
 }
