@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from torch import nn
 from CNN_Clap_our_data import CNNNetwork
+from time import sleep
 
 
 # Define the UrbanSoundDataset class for data loading and preprocessing
@@ -92,16 +93,16 @@ def create_data_loader(train_data, batch_size):
 
 # Define a function that will post on server every 15 Seconds
 
-def thingspeak_post():
-    threading.Timer(15,thingspeak_post).start()
-    val=random.randint(1,30)
+def write_data_thingspeak(data):
     URl='https://api.thingspeak.com/update?api_key='
     KEY='G5WG42VHHEELJ3I4'
-    HEADER='&field1={}&field2={}'.format(val,val)
+    HEADER='&field2={}'.format(data)
     NEW_URL=URl+KEY+HEADER
     #print(NEW_URL)
     data=urllib.request.urlopen(NEW_URL)
     #print(data)
+    print("Data written to ThingSpeak")
+
 
 def read_data_thingspeak():
     #URL='https://api.thingspeak.com/channels/2511688/fields/1.json?api_key='
@@ -117,11 +118,11 @@ def read_data_thingspeak():
     channel_id=get_data['channel']['id']
 
     field_1=get_data['feeds']
-    #print(field_1)
+    status = field_1[-1]['created_at']
     t = str(field_1[-1]['field1'])
     t = t[:-1]
 
-    return t
+    return t, status
 
 def process_string(input_string, max_length):
     # Split the string by commas
@@ -196,7 +197,7 @@ def test_model(ANNOTATIONS_FILE= './Data_and_ML/Data/iot_self_made/labeled_datas
 
     # load the model
     cnn = CNNNetwork()
-    state_dict = torch.load("./Data_and_ML/feedforwardnet.pth")
+    state_dict = torch.load("./Data_and_ML/feedforwardnet.pth", map_location=torch.device('cpu'))
     cnn.load_state_dict(state_dict)
 
     # load urban sound dataset dataset
@@ -292,6 +293,9 @@ if __name__ == '__main__':
     NUM_SAMPLES = 22050
     max_length = 512
     rate = 100
+    sleep_time = 5
+
+    prev_status = ''
 
     # Define the file root and extension
     file_folder = 'samples/'
@@ -300,28 +304,44 @@ if __name__ == '__main__':
     output_path = file_folder + sound_folder+ file_name
     output_path1 = file_folder + file_name
 
+    file_sound_folder = file_folder + sound_folder
+
     # check if folder exists and create if not
     if not os.path.exists(file_folder):
         os.makedirs(file_folder)
 
-    # Read the data from ThingSpeak
-    #sound_string = read_data_thingspeak()
+    # check if folder exists and create if not
+    if not os.path.exists(file_sound_folder):
+        os.makedirs(file_sound_folder)
 
-    sound_string = '-124,122,114,112,-3,112,-26,125,-36,125,-36,120,-35,115,-39,123,-55,118,-37,121,-42,117'
+    while True:
 
-    # Process the data
-    processed_output = process_string(sound_string, max_length)
-    data_to_wav(data=processed_output, output_path=output_path, rate=rate)
-    print(f"Data written to {output_path}")
+        # Read the data from ThingSpeak
+        sound_string, status = read_data_thingspeak()
+        #print(f"Data read from ThingSpeak: {sound_string}")
+        #sound_string = '-124,122,114,112,-3,112,-26,125,-36,125,-36,120,-35,115,-39,123,-55,118,-37,121,-42,117'
+        if prev_status != status:
+            # Process the data
+            print(f"Data read from ThingSpeak: {sound_string}")
+            processed_output = process_string(sound_string, max_length)
+            data_to_wav(data=processed_output, output_path=output_path, rate=rate)
+            print(f"Data written to {output_path}")
 
-    # Create a CSV file
-    #create_csv(file_name, output_path1)
+            # Create a CSV file
+            #create_csv(file_name, output_path1)
 
-    # Test the model with the created data
-    clap = test_model(ANNOTATIONS_FILE='./samples/labeled_dataset.csv',AUDIO_DIR='./samples/audio',num_test=1)
-    if clap:
-        print("Clap detected!")
-    else:
-        print("No clap detected!")
-    # Post data to ThingSpeak
-    print(clap)
+            # Test the model with the created data
+            clap = test_model(ANNOTATIONS_FILE='./samples/labeled_dataset.csv',AUDIO_DIR='./samples/audio',num_test=1)
+            if clap:
+                access = 1
+                print("Clap detected!")
+            else:
+                access = 0
+                print("No clap detected!")
+            # Post data to ThingSpeak
+            print(clap)
+            write_data_thingspeak(access)
+            sound_string, prev_status = read_data_thingspeak()
+        else:
+            print("No new audio detected")
+        sleep(sleep_time)
